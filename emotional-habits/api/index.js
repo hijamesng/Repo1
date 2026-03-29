@@ -1,4 +1,4 @@
-// api/index.ts
+// api-entry.ts
 import "dotenv/config";
 import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -461,7 +461,7 @@ async function createContext(opts) {
   return { req: opts.req, res: opts.res, user };
 }
 
-// api/index.ts
+// api-entry.ts
 var app = express();
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -472,7 +472,7 @@ app.use(
     createContext
   })
 );
-var index_default = app;
+var api_entry_default = app;
 export {
-  index_default as default
+  api_entry_default as default
 };
