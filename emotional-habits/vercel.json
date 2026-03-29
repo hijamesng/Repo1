@@ -1,5 +1,5 @@
 {
-  "buildCommand": "vite build && esbuild api/index.ts --platform=node --packages=external --bundle --format=esm --outfile=api/handler.js --tsconfig=tsconfig.json",
+  "buildCommand": "vite build",
   "outputDirectory": "dist/public",
   "framework": null,
   "rewrites": [
