@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, PlusCircle, RefreshCw } from "lucide-react";
+import { BookOpen, Pencil, PlusCircle, RefreshCw } from "lucide-react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { useState, useMemo } from "react";
@@ -195,11 +195,11 @@ function DashboardContent() {
             {recent.map((entry) => (
               <Card
                 key={entry.id}
-                className="border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                className="border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
                 onClick={() => navigate(`/entry/${entry.id}`)}
               >
                 <CardContent className="p-4 md:p-5">
-                  {/* Header row: domain badge, emotion badge, date */}
+                  {/* Header row: domain badge, emotion badge, date, edit */}
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     <Badge
                       variant="outline"
@@ -216,6 +216,13 @@ function DashboardContent() {
                     <span className="text-xs text-muted-foreground ml-auto">
                       {format(new Date(entry.createdAt), "dd/MM/yyyy")}
                     </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/entry/${entry.id}/edit`); }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary shrink-0"
+                      aria-label="Edit entry"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
                   </div>
 
                   {/* All fields as a compact grid */}

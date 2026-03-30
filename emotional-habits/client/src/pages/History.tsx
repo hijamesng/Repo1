@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, PlusCircle, Search, Trash2, X } from "lucide-react";
+import { BookOpen, Pencil, PlusCircle, Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -234,6 +234,13 @@ function HistoryContent() {
                   <span className="text-xs text-muted-foreground ml-auto">
                     {format(new Date(entry.createdAt), "dd/MM/yyyy · h:mm a")}
                   </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); navigate(`/entry/${entry.id}/edit`); }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary shrink-0"
+                    aria-label="Edit entry"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={(e) => handleDelete(entry.id, e)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0"

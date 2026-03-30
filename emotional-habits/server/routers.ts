@@ -10,6 +10,7 @@ import {
   getEmotionalEntryById,
   getRecentEmotionalEntries,
   getEmotionalEntriesCountByUser,
+  updateEmotionalEntry,
 } from "./db";
 
 const domainEnum = z.enum(["Boss", "Colleague", "Customer"]);
@@ -79,6 +80,24 @@ export const appRouter = router({
         const entry = await getEmotionalEntryById(input.id, ctx.user.id);
         if (!entry) throw new Error("Entry not found");
         return entry;
+      }),
+
+    /** Update an existing entry */
+    update: protectedProcedure
+      .input(z.object({ id: z.number() }).merge(emotionalEntryInput))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...data } = input;
+        await updateEmotionalEntry(id, ctx.user.id, {
+          domain: data.domain,
+          goal: data.goal,
+          intention: data.intention,
+          trigger: data.trigger,
+          emotionFelt: data.emotionFelt,
+          behaviour: data.behaviour,
+          alternateResponse: data.alternateResponse,
+          notes: data.notes ?? null,
+        });
+        return { success: true };
       }),
 
     /** Delete an entry */

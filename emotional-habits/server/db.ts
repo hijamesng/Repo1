@@ -113,3 +113,20 @@ export async function getEmotionalEntriesCountByUser(userId: number) {
 export async function getRecentEmotionalEntries(userId: number, limit = 5) {
   return getEmotionalEntriesByUser(userId, limit, 0);
 }
+
+export async function updateEmotionalEntry(
+  id: number,
+  userId: number,
+  data: Omit<InsertEmotionalEntry, "userId">
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const entry = await getEmotionalEntryById(id, userId);
+  if (!entry) throw new Error("Entry not found or unauthorized");
+  const [result] = await db
+    .update(emotionalEntries)
+    .set(data)
+    .where(eq(emotionalEntries.id, id))
+    .returning();
+  return result;
+}

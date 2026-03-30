@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import NewEntry from "./pages/NewEntry";
 import History from "./pages/History";
 import EntryDetail from "./pages/EntryDetail";
+import EditEntry from "./pages/EditEntry";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/new-entry" component={NewEntry} />
       <Route path="/history" component={History} />
       <Route path="/entry/:id" component={EntryDetail} />
+      <Route path="/entry/:id/edit" component={EditEntry} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

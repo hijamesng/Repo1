@@ -326,6 +326,14 @@ async function getEmotionalEntriesCountByUser(userId) {
 async function getRecentEmotionalEntries(userId, limit = 5) {
   return getEmotionalEntriesByUser(userId, limit, 0);
 }
+async function updateEmotionalEntry(id, userId, data) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const entry = await getEmotionalEntryById(id, userId);
+  if (!entry) throw new Error("Entry not found or unauthorized");
+  const [result] = await db.update(emotionalEntries).set(data).where(eq(emotionalEntries.id, id)).returning();
+  return result;
+}
 
 // server/routers.ts
 var domainEnum2 = z2.enum(["Boss", "Colleague", "Customer"]);
@@ -380,6 +388,21 @@ var appRouter = router({
       const entry = await getEmotionalEntryById(input.id, ctx.user.id);
       if (!entry) throw new Error("Entry not found");
       return entry;
+    }),
+    /** Update an existing entry */
+    update: protectedProcedure.input(z2.object({ id: z2.number() }).merge(emotionalEntryInput)).mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      await updateEmotionalEntry(id, ctx.user.id, {
+        domain: data.domain,
+        goal: data.goal,
+        intention: data.intention,
+        trigger: data.trigger,
+        emotionFelt: data.emotionFelt,
+        behaviour: data.behaviour,
+        alternateResponse: data.alternateResponse,
+        notes: data.notes ?? null
+      });
+      return { success: true };
     }),
     /** Delete an entry */
     delete: protectedProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ ctx, input }) => {
