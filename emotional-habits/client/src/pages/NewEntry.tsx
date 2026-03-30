@@ -61,8 +61,12 @@ function NewEntryContent() {
     emotionFelt: "", behaviour: "", alternateResponse: "", notes: "",
   });
 
+  const utils = trpc.useUtils();
   const createEntry = trpc.entries.create.useMutation({
     onSuccess: () => {
+      utils.entries.recent.invalidate();
+      utils.entries.list.invalidate();
+      utils.entries.stats.invalidate();
       toast.success("Entry saved! Great reflection work.", { description: "Your emotional habit entry has been recorded." });
       navigate("/dashboard");
     },
