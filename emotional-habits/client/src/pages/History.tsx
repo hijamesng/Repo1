@@ -236,14 +236,14 @@ function HistoryContent() {
                   </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); navigate(`/entry/${entry.id}/edit`); }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary shrink-0"
+                    className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary shrink-0"
                     aria-label="Edit entry"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
                     onClick={(e) => handleDelete(entry.id, e)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0"
+                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive shrink-0"
                     aria-label="Delete entry"
                   >
                     <Trash2 className="w-4 h-4" />
