@@ -15,7 +15,7 @@ const DOMAIN_COLORS: Record<string, string> = {
 };
 
 const CYCLE_STEPS = [
-  { key: "intention", label: "Intention", emoji: "🎯", color: "bg-accent/30 border-accent/50", desc: "NVC-based intention set before the interaction" },
+  { key: "intention", label: "Intention/Goal", emoji: "🎯", color: "bg-accent/30 border-accent/50", desc: "NVC-based intention set before the interaction" },
   { key: "trigger", label: "Trigger", emoji: "⚡", color: "bg-chart-4/10 border-chart-4/30", desc: "The activating event or behaviour" },
   { key: "emotionFelt", label: "Emotion Felt", emoji: "💛", color: "bg-yellow-50 border-yellow-200", desc: "The emotional response to the trigger" },
   { key: "behaviour", label: "Behaviour", emoji: "🔄", color: "bg-muted border-border", desc: "The default behavioural response" },

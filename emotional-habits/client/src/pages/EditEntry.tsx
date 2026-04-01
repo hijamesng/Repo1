@@ -26,7 +26,7 @@ interface FormData {
 const STEPS = [
   { id: 1, label: "Domain", title: "Who is this about?", subtitle: "Select the professional relationship context for this entry." },
   { id: 2, label: "Event/Scenario", title: "What was the event or scenario?", subtitle: "Describe the situation or context that took place." },
-  { id: 3, label: "Intention", title: "Set your intention", subtitle: "What was your NVC-based intention — how did you want to show up in this interaction?" },
+  { id: 3, label: "Intention/Goal", title: "Set your intention/goal", subtitle: "What was your NVC-based intention or goal — how did you want to show up in this interaction?" },
   { id: 4, label: "Trigger", title: "What triggered you?", subtitle: "Describe the specific event, word, or behaviour that activated your emotional response." },
   { id: 5, label: "Emotion", title: "What did you feel?", subtitle: "Name the emotion(s) you felt in response to the trigger." },
   { id: 6, label: "Behaviour", title: "How did you respond?", subtitle: "Describe your default behavioural response — what did you actually do or say?" },

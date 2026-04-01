@@ -59,7 +59,7 @@ function getDailyPromptIndex() {
 
 const FIELD_LABELS = [
   { key: "goal", label: "Event/Scenario" },
-  { key: "intention", label: "Intention" },
+  { key: "intention", label: "Intention/Goal" },
   { key: "trigger", label: "Trigger" },
   { key: "emotionFelt", label: "Emotion Felt" },
   { key: "behaviour", label: "Behaviour" },
