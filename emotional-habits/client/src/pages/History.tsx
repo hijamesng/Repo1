@@ -36,7 +36,7 @@ function emotionColor(emotion: string) {
 }
 
 const FIELD_LABELS = [
-  { key: "goal", label: "Goal" },
+  { key: "goal", label: "Event/Scenario" },
   { key: "intention", label: "Intention" },
   { key: "trigger", label: "Trigger" },
   { key: "emotionFelt", label: "Emotion Felt" },

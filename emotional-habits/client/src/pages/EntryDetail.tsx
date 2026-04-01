@@ -95,7 +95,7 @@ function EntryDetailContent() {
                 </span>
               </div>
               <div className="mb-2">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Goal</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Event/Scenario</p>
                 <p className="text-lg font-semibold text-foreground leading-snug">{entry.goal}</p>
               </div>
             </div>
