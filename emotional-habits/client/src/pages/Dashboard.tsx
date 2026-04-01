@@ -7,7 +7,6 @@ import { BookOpen, Pencil, PlusCircle, RefreshCw } from "lucide-react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { useState, useMemo } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
 
 const HEADER_IMAGE =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663211521711/TnZNKvwptQgVg6RKDVDCo4/dashboard-header-jZsB32rmdSGJkBfYjaVKvq.webp";
@@ -77,7 +76,7 @@ export default function Dashboard() {
 
 function DashboardContent() {
   const [, navigate] = useLocation();
-  const { user } = useAuth();
+  const { data: profile } = trpc.profile.get.useQuery();
   const { data: recent, isLoading: recentLoading } = trpc.entries.recent.useQuery({ limit: 5 });
 
   const dailyIndex = useMemo(() => getDailyPromptIndex(), []);
@@ -87,7 +86,7 @@ function DashboardContent() {
     setPromptIndex((i) => (i + 1) % REFLECTION_PROMPTS.length);
   };
 
-  const firstName = user?.name?.split(" ")[0] ?? "there";
+  const firstName = profile?.name?.split(" ")[0] ?? "there";
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 py-2">
