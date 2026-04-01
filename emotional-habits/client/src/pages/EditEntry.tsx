@@ -25,7 +25,7 @@ interface FormData {
 
 const STEPS = [
   { id: 1, label: "Domain", title: "Who is this about?", subtitle: "Select the professional relationship context for this entry." },
-  { id: 2, label: "Goal", title: "What was your goal?", subtitle: "Describe the communication goal you had in mind for this interaction." },
+  { id: 2, label: "Event/Scenario", title: "What was the event or scenario?", subtitle: "Describe the situation or context that took place." },
   { id: 3, label: "Intention", title: "Set your intention", subtitle: "What was your NVC-based intention — how did you want to show up in this interaction?" },
   { id: 4, label: "Trigger", title: "What triggered you?", subtitle: "Describe the specific event, word, or behaviour that activated your emotional response." },
   { id: 5, label: "Emotion", title: "What did you feel?", subtitle: "Name the emotion(s) you felt in response to the trigger." },
@@ -231,13 +231,13 @@ function EditEntryContent() {
             </div>
           )}
 
-          {/* Step 2: Goal */}
+          {/* Step 2: Event/Scenario */}
           {step === 2 && (
             <div className="space-y-2">
-              <Label htmlFor="goal" className="text-sm font-medium">Communication Goal</Label>
+              <Label htmlFor="goal" className="text-sm font-medium">Event / Scenario</Label>
               <Textarea
                 id="goal"
-                placeholder="e.g. To clearly communicate my project progress and address concerns about the deadline..."
+                placeholder="e.g. My manager questioned my project progress in front of the team during the morning standup..."
                 value={form.goal}
                 onChange={e => setForm(f => ({ ...f, goal: e.target.value }))}
                 rows={4}
