@@ -143,7 +143,7 @@ export async function getAllUsers() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db
-    .select({ id: users.id, name: users.name, email: users.email, role: users.role, avatarUrl: users.avatarUrl, createdAt: users.createdAt })
+    .select({ id: users.id, name: users.name, email: users.email, role: users.role, avatarUrl: users.avatarUrl, openId: users.openId, createdAt: users.createdAt })
     .from(users)
     .orderBy(desc(users.createdAt));
 }

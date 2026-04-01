@@ -343,7 +343,7 @@ async function updateUserName(id, name) {
 async function getAllUsers() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, avatarUrl: users.avatarUrl, createdAt: users.createdAt }).from(users).orderBy(desc(users.createdAt));
+  return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, avatarUrl: users.avatarUrl, openId: users.openId, createdAt: users.createdAt }).from(users).orderBy(desc(users.createdAt));
 }
 async function updateUserRole(id, role) {
   const db = await getDb();
@@ -405,13 +405,27 @@ var appRouter = router({
   }),
   admin: router({
     listUsers: adminProcedure.query(async () => {
-      return getAllUsers();
+      const allUsers = await getAllUsers();
+      return allUsers.map(({ openId, ...u }) => ({
+        ...u,
+        isOwner: openId === ENV.ownerOpenId
+      }));
     }),
     updateRole: adminProcedure.input(z2.object({ userId: z2.number(), role: z2.enum(["user", "admin"]) })).mutation(async ({ input }) => {
+      const allUsers = await getAllUsers();
+      const target = allUsers.find((u) => u.id === input.userId);
+      if (target?.openId === ENV.ownerOpenId) {
+        throw new Error("The owner account role cannot be changed.");
+      }
       await updateUserRole(input.userId, input.role);
       return { success: true };
     }),
     deleteUser: adminProcedure.input(z2.object({ userId: z2.number() })).mutation(async ({ input }) => {
+      const allUsers = await getAllUsers();
+      const target = allUsers.find((u) => u.id === input.userId);
+      if (target?.openId === ENV.ownerOpenId) {
+        throw new Error("The owner account cannot be deleted.");
+      }
       await deleteUserById(input.userId);
       return { success: true };
     }),

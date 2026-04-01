@@ -137,7 +137,8 @@ function AdminContent() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={updateRole.isPending || user.id === profile.id}
+                    disabled={updateRole.isPending || user.id === profile.id || user.isOwner}
+                    title={user.isOwner ? "Owner role cannot be changed" : undefined}
                     onClick={() => updateRole.mutate({ userId: user.id, role: user.role === "admin" ? "user" : "admin" })}
                   >
                     {user.role === "admin" ? "Demote" : "Promote"}
@@ -145,7 +146,8 @@ function AdminContent() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={deleteUser.isPending || user.id === profile.id}
+                    disabled={deleteUser.isPending || user.id === profile.id || user.isOwner}
+                    title={user.isOwner ? "Owner account cannot be deleted" : undefined}
                     className="text-destructive hover:text-destructive hover:border-destructive/50"
                     onClick={() => {
                       if (confirm(`Delete ${user.email ?? "this user"}? This removes all their entries.`)) {

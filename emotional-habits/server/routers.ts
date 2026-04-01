@@ -3,6 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { ENV } from "./_core/env";
 import {
   createEmotionalEntry,
   deleteEmotionalEntry,
@@ -69,17 +70,31 @@ export const appRouter = router({
 
   admin: router({
     listUsers: adminProcedure.query(async () => {
-      return getAllUsers();
+      const allUsers = await getAllUsers();
+      return allUsers.map(({ openId, ...u }) => ({
+        ...u,
+        isOwner: openId === ENV.ownerOpenId,
+      }));
     }),
     updateRole: adminProcedure
       .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
       .mutation(async ({ input }) => {
+        const allUsers = await getAllUsers();
+        const target = allUsers.find(u => u.id === input.userId);
+        if (target?.openId === ENV.ownerOpenId) {
+          throw new Error("The owner account role cannot be changed.");
+        }
         await updateUserRole(input.userId, input.role);
         return { success: true };
       }),
     deleteUser: adminProcedure
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ input }) => {
+        const allUsers = await getAllUsers();
+        const target = allUsers.find(u => u.id === input.userId);
+        if (target?.openId === ENV.ownerOpenId) {
+          throw new Error("The owner account cannot be deleted.");
+        }
         await deleteUserById(input.userId);
         return { success: true };
       }),
