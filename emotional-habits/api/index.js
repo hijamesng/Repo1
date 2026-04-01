@@ -334,6 +334,27 @@ async function updateEmotionalEntry(id, userId, data) {
   const [result] = await db.update(emotionalEntries).set(data).where(eq(emotionalEntries.id, id)).returning();
   return result;
 }
+async function updateUserName(id, name) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ name, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, id));
+}
+async function getAllUsers() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).orderBy(desc(users.createdAt));
+}
+async function updateUserRole(id, role) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ role, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, id));
+}
+async function deleteUserById(id) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(emotionalEntries).where(eq(emotionalEntries.userId, id));
+  await db.delete(users).where(eq(users.id, id));
+}
 
 // server/routers.ts
 var domainEnum2 = z2.enum(["Boss", "Colleague", "Customer"]);
@@ -354,6 +375,33 @@ var appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      return { success: true };
+    })
+  }),
+  profile: router({
+    get: protectedProcedure.query(async ({ ctx }) => {
+      return {
+        id: ctx.user.id,
+        name: ctx.user.name,
+        email: ctx.user.email,
+        role: ctx.user.role
+      };
+    }),
+    update: protectedProcedure.input(z2.object({ name: z2.string().min(1).max(100) })).mutation(async ({ ctx, input }) => {
+      await updateUserName(ctx.user.id, input.name);
+      return { success: true };
+    })
+  }),
+  admin: router({
+    listUsers: adminProcedure.query(async () => {
+      return getAllUsers();
+    }),
+    updateRole: adminProcedure.input(z2.object({ userId: z2.number(), role: z2.enum(["user", "admin"]) })).mutation(async ({ input }) => {
+      await updateUserRole(input.userId, input.role);
+      return { success: true };
+    }),
+    deleteUser: adminProcedure.input(z2.object({ userId: z2.number() })).mutation(async ({ input }) => {
+      await deleteUserById(input.userId);
       return { success: true };
     })
   }),
