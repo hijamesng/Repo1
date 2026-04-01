@@ -247,22 +247,31 @@ function NewEntryContent() {
           {step === 5 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Select or type your emotion</Label>
+                <Label className="text-sm font-medium">Select your emotions <span className="text-muted-foreground font-normal">(choose one or more)</span></Label>
                 <div className="flex flex-wrap gap-2">
-                  {COMMON_EMOTIONS.map(emotion => (
-                    <button
-                      key={emotion}
-                      onClick={() => setForm(f => ({ ...f, emotionFelt: emotion }))}
-                      className={cn(
-                        "px-3 py-1.5 rounded-full text-sm border transition-all",
-                        form.emotionFelt === emotion
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-card hover:border-primary/50 hover:bg-muted/50 text-foreground"
-                      )}
-                    >
-                      {emotion}
-                    </button>
-                  ))}
+                  {COMMON_EMOTIONS.map(emotion => {
+                    const selected = form.emotionFelt.split(", ").filter(Boolean).includes(emotion);
+                    return (
+                      <button
+                        key={emotion}
+                        onClick={() => setForm(f => {
+                          const current = f.emotionFelt ? f.emotionFelt.split(", ").filter(Boolean) : [];
+                          const updated = current.includes(emotion)
+                            ? current.filter(e => e !== emotion)
+                            : [...current, emotion];
+                          return { ...f, emotionFelt: updated.join(", ") };
+                        })}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-sm border transition-all",
+                          selected
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-card hover:border-primary/50 hover:bg-muted/50 text-foreground"
+                        )}
+                      >
+                        {emotion}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div className="space-y-2">
