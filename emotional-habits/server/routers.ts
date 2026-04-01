@@ -12,6 +12,7 @@ import {
   getEmotionalEntriesCountByUser,
   updateEmotionalEntry,
   updateUserName,
+  updateUserAvatar,
   getAllUsers,
   updateUserRole,
   deleteUserById,
@@ -49,12 +50,19 @@ export const appRouter = router({
         name: ctx.user.name,
         email: ctx.user.email,
         role: ctx.user.role,
+        avatarUrl: ctx.user.avatarUrl ?? null,
       };
     }),
     update: protectedProcedure
       .input(z.object({ name: z.string().min(1).max(100) }))
       .mutation(async ({ ctx, input }) => {
         await updateUserName(ctx.user.id, input.name);
+        return { success: true };
+      }),
+    updateAvatar: protectedProcedure
+      .input(z.object({ avatarUrl: z.string().url().max(1000) }))
+      .mutation(async ({ ctx, input }) => {
+        await updateUserAvatar(ctx.user.id, input.avatarUrl);
         return { success: true };
       }),
   }),
@@ -73,6 +81,12 @@ export const appRouter = router({
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ input }) => {
         await deleteUserById(input.userId);
+        return { success: true };
+      }),
+    updateUser: adminProcedure
+      .input(z.object({ userId: z.number(), name: z.string().min(1).max(100) }))
+      .mutation(async ({ input }) => {
+        await updateUserName(input.userId, input.name);
         return { success: true };
       }),
   }),

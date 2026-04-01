@@ -143,7 +143,7 @@ export async function getAllUsers() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db
-    .select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt })
+    .select({ id: users.id, name: users.name, email: users.email, role: users.role, avatarUrl: users.avatarUrl, createdAt: users.createdAt })
     .from(users)
     .orderBy(desc(users.createdAt));
 }
@@ -152,6 +152,12 @@ export async function updateUserRole(id: number, role: "user" | "admin"): Promis
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set({ role, updatedAt: new Date() }).where(eq(users.id, id));
+}
+
+export async function updateUserAvatar(id: number, avatarUrl: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ avatarUrl, updatedAt: new Date() }).where(eq(users.id, id));
 }
 
 export async function deleteUserById(id: number): Promise<void> {

@@ -1,0 +1,7 @@
+node_modules/
+*.txt
+.claude/
+myrpoj/
+dist/
+.env
+.env.*

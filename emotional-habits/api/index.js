@@ -202,6 +202,7 @@ var users = pgTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: roleEnum("role").default("user").notNull(),
+  avatarUrl: text("avatarUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull()
@@ -342,12 +343,17 @@ async function updateUserName(id, name) {
 async function getAllUsers() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).orderBy(desc(users.createdAt));
+  return db.select({ id: users.id, name: users.name, email: users.email, role: users.role, avatarUrl: users.avatarUrl, createdAt: users.createdAt }).from(users).orderBy(desc(users.createdAt));
 }
 async function updateUserRole(id, role) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set({ role, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, id));
+}
+async function updateUserAvatar(id, avatarUrl) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ avatarUrl, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, id));
 }
 async function deleteUserById(id) {
   const db = await getDb();
@@ -384,11 +390,16 @@ var appRouter = router({
         id: ctx.user.id,
         name: ctx.user.name,
         email: ctx.user.email,
-        role: ctx.user.role
+        role: ctx.user.role,
+        avatarUrl: ctx.user.avatarUrl ?? null
       };
     }),
     update: protectedProcedure.input(z2.object({ name: z2.string().min(1).max(100) })).mutation(async ({ ctx, input }) => {
       await updateUserName(ctx.user.id, input.name);
+      return { success: true };
+    }),
+    updateAvatar: protectedProcedure.input(z2.object({ avatarUrl: z2.string().url().max(1e3) })).mutation(async ({ ctx, input }) => {
+      await updateUserAvatar(ctx.user.id, input.avatarUrl);
       return { success: true };
     })
   }),
@@ -402,6 +413,10 @@ var appRouter = router({
     }),
     deleteUser: adminProcedure.input(z2.object({ userId: z2.number() })).mutation(async ({ input }) => {
       await deleteUserById(input.userId);
+      return { success: true };
+    }),
+    updateUser: adminProcedure.input(z2.object({ userId: z2.number(), name: z2.string().min(1).max(100) })).mutation(async ({ input }) => {
+      await updateUserName(input.userId, input.name);
       return { success: true };
     })
   }),
