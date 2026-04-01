@@ -64,6 +64,7 @@ const FIELD_LABELS = [
   { key: "emotionFelt", label: "Emotion Felt" },
   { key: "behaviour", label: "Behaviour" },
   { key: "alternateResponse", label: "Alternate Response" },
+  { key: "notes", label: "Additional Notes" },
 ] as const;
 
 export default function Dashboard() {
