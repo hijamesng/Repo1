@@ -11,6 +11,8 @@ import NewEntry from "./pages/NewEntry";
 import History from "./pages/History";
 import EntryDetail from "./pages/EntryDetail";
 import EditEntry from "./pages/EditEntry";
+import Profile from "./pages/Profile";
+import Admin from "./pages/Admin";
 
 function Router() {
   return (
@@ -22,6 +24,8 @@ function Router() {
       <Route path="/history" component={History} />
       <Route path="/entry/:id" component={EntryDetail} />
       <Route path="/entry/:id/edit" component={EditEntry} />
+      <Route path="/profile" component={Profile} />
+      <Route path="/admin" component={Admin} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

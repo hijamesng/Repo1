@@ -2,7 +2,7 @@ import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import {
   createEmotionalEntry,
   deleteEmotionalEntry,
@@ -11,6 +11,10 @@ import {
   getRecentEmotionalEntries,
   getEmotionalEntriesCountByUser,
   updateEmotionalEntry,
+  updateUserName,
+  getAllUsers,
+  updateUserRole,
+  deleteUserById,
 } from "./db";
 
 const domainEnum = z.enum(["Boss", "Colleague", "Customer"]);
@@ -36,6 +40,41 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+  }),
+
+  profile: router({
+    get: protectedProcedure.query(async ({ ctx }) => {
+      return {
+        id: ctx.user.id,
+        name: ctx.user.name,
+        email: ctx.user.email,
+        role: ctx.user.role,
+      };
+    }),
+    update: protectedProcedure
+      .input(z.object({ name: z.string().min(1).max(100) }))
+      .mutation(async ({ ctx, input }) => {
+        await updateUserName(ctx.user.id, input.name);
+        return { success: true };
+      }),
+  }),
+
+  admin: router({
+    listUsers: adminProcedure.query(async () => {
+      return getAllUsers();
+    }),
+    updateRole: adminProcedure
+      .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
+      .mutation(async ({ input }) => {
+        await updateUserRole(input.userId, input.role);
+        return { success: true };
+      }),
+    deleteUser: adminProcedure
+      .input(z.object({ userId: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteUserById(input.userId);
+        return { success: true };
+      }),
   }),
 
   entries: router({

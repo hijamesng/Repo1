@@ -130,3 +130,33 @@ export async function updateEmotionalEntry(
     .returning();
   return result;
 }
+
+// ─── User Management ──────────────────────────────────────────────────────────
+
+export async function updateUserName(id: number, name: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ name, updatedAt: new Date() }).where(eq(users.id, id));
+}
+
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db
+    .select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt })
+    .from(users)
+    .orderBy(desc(users.createdAt));
+}
+
+export async function updateUserRole(id: number, role: "user" | "admin"): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ role, updatedAt: new Date() }).where(eq(users.id, id));
+}
+
+export async function deleteUserById(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(emotionalEntries).where(eq(emotionalEntries.userId, id));
+  await db.delete(users).where(eq(users.id, id));
+}
