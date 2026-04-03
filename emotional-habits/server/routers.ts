@@ -188,8 +188,7 @@ export const appRouter = router({
         behaviour: z.string(),
       }))
       .mutation(async ({ input }) => {
-        if (!ENV.anthropicApiKey) throw new Error("Aura is not configured.");
-        const client = new Anthropic({ apiKey: ENV.anthropicApiKey });
+        if (!ENV.geminiApiKey) throw new Error("Aura is not configured.");
         const prompt = `You are Aura, an empathetic AI coach trained in Cognitive Behavioural Therapy (CBT) and Non-Violent Communication (NVC). A user has shared a professional interaction they found emotionally challenging.
 
 Context:
@@ -204,12 +203,20 @@ Using CBT principles (identifying cognitive distortions, reframing thoughts) and
 
 Write 2–4 sentences. Be warm, direct, and concrete. Do not use bullet points or headers — write as a single flowing paragraph they can rehearse or adapt. Start with "Next time, ..."`;
 
-        const message = await client.messages.create({
-          model: "claude-3-5-haiku-20241022",
-          max_tokens: 300,
-          messages: [{ role: "user", content: prompt }],
-        });
-        const text = message.content[0].type === "text" ? message.content[0].text : "";
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${ENV.geminiApiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+          }
+        );
+        if (!res.ok) {
+          const err = await res.text();
+          throw new Error(`Aura error: ${err}`);
+        }
+        const data = await res.json() as any;
+        const text: string = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
         return { suggestion: text };
       }),
 
