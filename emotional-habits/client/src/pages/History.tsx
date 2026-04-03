@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { BookOpen, Pencil, PlusCircle, Search, Trash2, X } from "lucide-react";
+import { BookOpen, Download, Pencil, PlusCircle, Search, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -75,6 +75,54 @@ function HistoryContent() {
 
   const allEntries = data?.entries ?? [];
 
+  const exportPDF = async (entries: typeof allEntries, label: string) => {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    // Header
+    doc.setFontSize(18);
+    doc.setTextColor(80, 50, 20);
+    doc.text("EmotiFlow — Entry History", 14, 16);
+    doc.setFontSize(10);
+    doc.setTextColor(120, 100, 80);
+    doc.text(`${label} · ${entries.length} entr${entries.length === 1 ? "y" : "ies"} · Exported ${format(new Date(), "dd/MM/yyyy")}`, 14, 23);
+
+    autoTable(doc, {
+      startY: 28,
+      head: [["Date", "Domain", "Event/Scenario", "Intention/Goal", "Trigger", "Emotion", "Behaviour", "Alternate Response", "Notes"]],
+      body: entries.map(e => [
+        format(new Date(e.createdAt), "dd/MM/yyyy"),
+        e.domain,
+        e.goal,
+        e.intention,
+        e.trigger,
+        e.emotionFelt,
+        e.behaviour,
+        e.alternateResponse,
+        e.notes ?? "",
+      ]),
+      styles: { fontSize: 8, cellPadding: 3, overflow: "linebreak" },
+      headStyles: { fillColor: [139, 90, 43], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [253, 248, 243] },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 22 },
+        2: { cellWidth: 38 },
+        3: { cellWidth: 38 },
+        4: { cellWidth: 38 },
+        5: { cellWidth: 28 },
+        6: { cellWidth: 28 },
+        7: { cellWidth: 45 },
+        8: { cellWidth: 25 },
+      },
+    });
+
+    doc.save(`emotiflow-history-${label.toLowerCase().replace(/\s+/g, "-")}-${format(new Date(), "yyyyMMdd")}.pdf`);
+    toast.success("PDF exported", { description: `${entries.length} entr${entries.length === 1 ? "y" : "ies"} saved.` });
+  };
+
   const domainFiltered =
     filter === "All" ? allEntries : allEntries.filter((e) => e.domain === filter);
 
@@ -122,10 +170,26 @@ function HistoryContent() {
             {data?.total ?? 0} total entries — review your emotional growth over time.
           </p>
         </div>
-        <Button onClick={() => navigate("/new-entry")} className="gap-2 shrink-0">
-          <PlusCircle className="w-4 h-4" />
-          New Entry
-        </Button>
+        <div className="flex gap-2 shrink-0">
+          <Button
+            variant="outline"
+            className="gap-2"
+            disabled={filtered.length === 0}
+            onClick={() => {
+              const label = filter !== "All" || query
+                ? `${filter !== "All" ? filter : "All"}${query ? ` - "${search}"` : ""}`
+                : "All Entries";
+              exportPDF(filtered, label);
+            }}
+          >
+            <Download className="w-4 h-4" />
+            Export PDF
+          </Button>
+          <Button onClick={() => navigate("/new-entry")} className="gap-2">
+            <PlusCircle className="w-4 h-4" />
+            New Entry
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}
