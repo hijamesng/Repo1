@@ -200,13 +200,11 @@ Context:
 - Emotion felt: ${input.emotionFelt}
 - Behaviour response: ${input.behaviour}
 
-Using CBT principles (identifying cognitive distortions, reframing thoughts) and NVC principles (observations, feelings, needs, requests), craft a specific, practical alternate response this person could use next time.
-
-Write 2–4 sentences. Be warm, direct, and concrete. Do not use bullet points or headers — write as a single flowing paragraph they can rehearse or adapt. Start with "Next time, ..."`;
+Using CBT and NVC principles, give one concise, actionable alternate response in 1–2 sentences. Be direct and specific. Start with "Next time, ..."`;
 
         const message = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 300,
+          max_tokens: 150,
           messages: [{ role: "user", content: prompt }],
         });
         const text = message.content[0].type === "text" ? message.content[0].text : "";
