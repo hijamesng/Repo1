@@ -5,6 +5,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 // server/routers.ts
 import { z as z2 } from "zod";
+import Anthropic from "@anthropic-ai/sdk";
 
 // shared/const.ts
 var COOKIE_NAME = "app_session_id";
@@ -497,7 +498,8 @@ var appRouter = router({
       emotionFelt: z2.string(),
       behaviour: z2.string()
     })).mutation(async ({ input }) => {
-      if (!ENV.geminiApiKey) throw new Error("Aura is not configured.");
+      if (!ENV.anthropicApiKey) throw new Error("Aura is not configured.");
+      const client = new Anthropic({ apiKey: ENV.anthropicApiKey });
       const prompt = `You are Aura, an empathetic AI coach trained in Cognitive Behavioural Therapy (CBT) and Non-Violent Communication (NVC). A user has shared a professional interaction they found emotionally challenging.
 
 Context:
@@ -511,20 +513,12 @@ Context:
 Using CBT principles (identifying cognitive distortions, reframing thoughts) and NVC principles (observations, feelings, needs, requests), craft a specific, practical alternate response this person could use next time.
 
 Write 2\u20134 sentences. Be warm, direct, and concrete. Do not use bullet points or headers \u2014 write as a single flowing paragraph they can rehearse or adapt. Start with "Next time, ..."`;
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${ENV.geminiApiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        }
-      );
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(`Aura error: ${err}`);
-      }
-      const data = await res.json();
-      const text2 = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      const message = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 300,
+        messages: [{ role: "user", content: prompt }]
+      });
+      const text2 = message.content[0].type === "text" ? message.content[0].text : "";
       return { suggestion: text2 };
     }),
     /** Get stats for dashboard */
