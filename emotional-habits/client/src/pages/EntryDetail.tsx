@@ -56,40 +56,42 @@ function EntryDetailContent() {
       }
     };
 
-    const addSection = (step: number, label: string, desc: string, value: string, bgColor: [number, number, number], labelColor: [number, number, number]) => {
-      const valueLines = doc.splitTextToSize(value || "—", contentWidth - 10);
-      const blockHeight = 8 + 5 + 5 + valueLines.length * 5.5 + 6;
+    const addSection = (_step: number, label: string, desc: string, value: string, bgColor: [number, number, number], labelColor: [number, number, number]) => {
+      const valueLines = doc.splitTextToSize(value || "—", contentWidth - 14);
+      const blockHeight = 7 + (desc ? 5 : 0) + valueLines.length * 5.5 + 7;
       checkNewPage(blockHeight);
 
       // Background block
       doc.setFillColor(...bgColor);
       doc.roundedRect(margin, y, contentWidth, blockHeight, 2, 2, "F");
 
-      // Step number pill
+      // Bullet point
       doc.setFillColor(...labelColor);
-      doc.roundedRect(margin + 4, y + 5, 18, 6, 1, 1, "F");
-      doc.setFontSize(7);
-      doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold");
-      doc.text(`STEP ${step}`, margin + 5, y + 9.5);
+      doc.circle(margin + 7, y + 7.5, 2, "F");
 
       // Label
       doc.setFontSize(10);
       doc.setTextColor(...labelColor);
       doc.setFont("helvetica", "bold");
-      doc.text(label, margin + 26, y + 9.5);
+      doc.text(label, margin + 12, y + 9);
 
-      // Description
-      doc.setFontSize(8);
-      doc.setTextColor(140, 120, 100);
-      doc.setFont("helvetica", "italic");
-      doc.text(desc, margin + 4, y + 17);
+      let contentY = y + 9;
+
+      // Description (if provided)
+      if (desc) {
+        contentY += 5;
+        doc.setFontSize(8);
+        doc.setTextColor(140, 120, 100);
+        doc.setFont("helvetica", "italic");
+        doc.text(desc, margin + 12, contentY);
+      }
 
       // Value
+      contentY += 5.5;
       doc.setFontSize(10);
       doc.setTextColor(40, 30, 20);
       doc.setFont("helvetica", "normal");
-      doc.text(valueLines, margin + 4, y + 24);
+      doc.text(valueLines, margin + 12, contentY);
 
       y += blockHeight + 4;
     };
