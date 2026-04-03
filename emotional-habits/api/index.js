@@ -512,7 +512,7 @@ Using CBT principles (identifying cognitive distortions, reframing thoughts) and
 
 Write 2\u20134 sentences. Be warm, direct, and concrete. Do not use bullet points or headers \u2014 write as a single flowing paragraph they can rehearse or adapt. Start with "Next time, ..."`;
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${ENV.geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${ENV.geminiApiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
