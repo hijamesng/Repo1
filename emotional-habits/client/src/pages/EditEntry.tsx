@@ -435,10 +435,27 @@ function EditEntryContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="notes" className="text-sm font-medium text-muted-foreground">Additional notes (optional)</Label>
+                <Label className="text-sm font-medium text-muted-foreground">Additional notes (optional)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {["Manage up", "Manage down", "Manage within"].map(option => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, notes: f.notes === option ? "" : option }))}
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-sm border transition-all",
+                        form.notes === option
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-card hover:border-primary/50 hover:bg-muted/50 text-foreground"
+                      )}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
                 <Textarea
                   id="notes"
-                  placeholder="Any other reflections or context..."
+                  placeholder="Or write your own notes..."
                   value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   rows={2}
