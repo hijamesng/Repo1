@@ -44,77 +44,113 @@ function EntryDetailContent() {
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 16;
     const contentWidth = pageWidth - margin * 2;
-    let y = 20;
+    let y = 0;
 
-    const addText = (text: string, size: number, color: [number, number, number], bold = false) => {
-      doc.setFontSize(size);
-      doc.setTextColor(...color);
-      doc.setFont("helvetica", bold ? "bold" : "normal");
-      const lines = doc.splitTextToSize(text, contentWidth);
-      doc.text(lines, margin, y);
-      y += lines.length * (size * 0.45) + 3;
+    const checkNewPage = (neededHeight: number) => {
+      if (y + neededHeight > pageHeight - 16) {
+        doc.addPage();
+        y = 16;
+      }
     };
 
-    const addSection = (emoji: string, label: string, desc: string, value: string, bgColor: [number, number, number]) => {
-      if (y > 255) { doc.addPage(); y = 20; }
+    const addSection = (step: number, label: string, desc: string, value: string, bgColor: [number, number, number], labelColor: [number, number, number]) => {
+      const valueLines = doc.splitTextToSize(value || "—", contentWidth - 10);
+      const blockHeight = 8 + 5 + 5 + valueLines.length * 5.5 + 6;
+      checkNewPage(blockHeight);
+
+      // Background block
       doc.setFillColor(...bgColor);
-      const previewLines = doc.splitTextToSize(value || "—", contentWidth - 8);
-      const blockHeight = 10 + previewLines.length * 5.5 + 8;
-      doc.roundedRect(margin, y, contentWidth, blockHeight, 3, 3, "F");
-      doc.setFontSize(9);
-      doc.setTextColor(100, 70, 30);
+      doc.roundedRect(margin, y, contentWidth, blockHeight, 2, 2, "F");
+
+      // Step number pill
+      doc.setFillColor(...labelColor);
+      doc.roundedRect(margin + 4, y + 5, 18, 6, 1, 1, "F");
+      doc.setFontSize(7);
+      doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.text(`${emoji}  ${label}`, margin + 4, y + 7);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(130, 110, 90);
+      doc.text(`STEP ${step}`, margin + 5, y + 9.5);
+
+      // Label
+      doc.setFontSize(10);
+      doc.setTextColor(...labelColor);
+      doc.setFont("helvetica", "bold");
+      doc.text(label, margin + 26, y + 9.5);
+
+      // Description
       doc.setFontSize(8);
-      doc.text(`— ${desc}`, margin + 4 + doc.getTextWidth(`${emoji}  ${label}`) + 2, y + 7);
+      doc.setTextColor(140, 120, 100);
+      doc.setFont("helvetica", "italic");
+      doc.text(desc, margin + 4, y + 17);
+
+      // Value
       doc.setFontSize(10);
       doc.setTextColor(40, 30, 20);
-      doc.text(previewLines, margin + 4, y + 14);
-      y += blockHeight + 5;
+      doc.setFont("helvetica", "normal");
+      doc.text(valueLines, margin + 4, y + 24);
+
+      y += blockHeight + 4;
     };
 
-    // Title
+    // Header bar
     doc.setFillColor(139, 90, 43);
-    doc.rect(0, 0, pageWidth, 14, "F");
-    doc.setFontSize(11);
+    doc.rect(0, 0, pageWidth, 16, "F");
+    doc.setFontSize(12);
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.text("EmotiFlow — Emotional Cycle Report", margin, 9.5);
+    doc.text("EmotiFlow  —  Emotional Cycle Report", margin, 11);
     y = 24;
 
-    // Meta
-    addText(format(new Date(entry.createdAt), "EEEE, MMMM d, yyyy · h:mm a"), 9, [120, 100, 80]);
-    addText(`Domain: ${entry.domain}`, 9, [120, 100, 80]);
-    y += 2;
+    // Date & Domain
+    doc.setFontSize(9);
+    doc.setTextColor(120, 100, 80);
+    doc.setFont("helvetica", "normal");
+    doc.text(format(new Date(entry.createdAt), "EEEE, MMMM d, yyyy  |  h:mm a"), margin, y);
+    y += 6;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(139, 90, 43);
+    doc.text(`Domain: ${entry.domain}`, margin, y);
+    y += 10;
 
-    // Event/Scenario
-    addText("Event / Scenario", 9, [100, 70, 30], true);
-    addText(entry.goal, 13, [40, 30, 20], true);
-    y += 4;
+    // Event / Scenario
+    doc.setFontSize(8);
+    doc.setTextColor(139, 90, 43);
+    doc.setFont("helvetica", "bold");
+    doc.text("EVENT / SCENARIO", margin, y);
+    y += 5;
+    doc.setFontSize(13);
+    doc.setTextColor(40, 30, 20);
+    doc.setFont("helvetica", "bold");
+    const goalLines = doc.splitTextToSize(entry.goal, contentWidth);
+    doc.text(goalLines, margin, y);
+    y += goalLines.length * 6.5 + 8;
+
+    // Divider
+    doc.setDrawColor(200, 180, 160);
+    doc.line(margin, y - 4, pageWidth - margin, y - 4);
 
     // Cycle steps
-    addSection("🎯", "Intention/Goal", "NVC-based intention going in", entry.intention, [245, 240, 230]);
-    addSection("⚡", "Trigger", "The activating event or behaviour", entry.trigger, [255, 248, 235]);
-    addSection("💛", "Emotion Felt", "Emotional response to the trigger", entry.emotionFelt, [255, 253, 235]);
-    addSection("🔄", "Behaviour", "Default behavioural response", entry.behaviour, [245, 245, 245]);
-    addSection("🌱", "Alternate Response", "Planned healthier response for next time", entry.alternateResponse, [240, 248, 240]);
+    addSection(1, "Intention / Goal", "NVC-based intention going into the interaction", entry.intention, [248, 244, 238], [120, 80, 40]);
+    addSection(2, "Trigger", "The activating event or behaviour", entry.trigger, [255, 250, 240], [180, 100, 30]);
+    addSection(3, "Emotion Felt", "Emotional response to the trigger", entry.emotionFelt, [255, 252, 235], [160, 120, 20]);
+    addSection(4, "Behaviour", "Default behavioural response", entry.behaviour, [245, 245, 245], [80, 80, 90]);
+    addSection(5, "Alternate Response", "Planned healthier response for next time", entry.alternateResponse, [240, 248, 242], [40, 120, 70]);
 
     // Notes
     if (entry.notes) {
-      addSection("📝", "Additional Notes", "", entry.notes, [248, 248, 252]);
+      addSection(6, "Additional Notes", "", entry.notes, [245, 245, 252], [80, 80, 160]);
     }
 
-    // Footer
+    // Footer on all pages
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
-      doc.setTextColor(160, 140, 120);
-      doc.text(`EmotiFlow · Page ${i} of ${pageCount}`, margin, doc.internal.pageSize.getHeight() - 8);
+      doc.setTextColor(180, 160, 140);
+      doc.setFont("helvetica", "normal");
+      doc.text(`EmotiFlow  |  Page ${i} of ${pageCount}`, margin, pageHeight - 8);
     }
 
     doc.save(`emotiflow-entry-${format(new Date(entry.createdAt), "yyyyMMdd-HHmm")}.pdf`);
