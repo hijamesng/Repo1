@@ -7,7 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, CheckCircle2, ChevronLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, ChevronLeft, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Domain = "Boss" | "Colleague" | "Customer";
@@ -80,7 +80,14 @@ function EditEntryContent() {
     }
   }, [entry]);
 
+  const [auraSuggestion, setAuraSuggestion] = useState<string | null>(null);
   const utils = trpc.useUtils();
+
+  const auraInsight = trpc.entries.auraInsight.useMutation({
+    onSuccess: (data) => setAuraSuggestion(data.suggestion),
+    onError: (err) => toast.error("Aura couldn't generate a response", { description: err.message }),
+  });
+
   const updateEntry = trpc.entries.update.useMutation({
     onSuccess: () => {
       utils.entries.recent.invalidate();
@@ -372,6 +379,50 @@ function EditEntryContent() {
               <div className="bg-secondary/50 rounded-xl p-4 text-sm text-secondary-foreground">
                 <strong>Growth moment:</strong> Based on your trigger and emotion, what would a calmer, more intentional version of you do differently? This is your alternate response to practice.
               </div>
+
+              {/* Aura AI button */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2 border-primary/40 text-primary hover:bg-primary/5"
+                disabled={auraInsight.isPending}
+                onClick={() => {
+                  setAuraSuggestion(null);
+                  auraInsight.mutate({
+                    domain: form.domain as string,
+                    goal: form.goal,
+                    intention: form.intention,
+                    trigger: form.trigger,
+                    emotionFelt: form.emotionFelt,
+                    behaviour: form.behaviour,
+                  });
+                }}
+              >
+                <Sparkles className="w-4 h-4" />
+                {auraInsight.isPending ? "Aura is thinking..." : "Ask Aura for a suggestion"}
+              </Button>
+
+              {/* Aura suggestion */}
+              {auraSuggestion && (
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                    <Sparkles className="w-4 h-4" />
+                    Aura's suggestion
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed">{auraSuggestion}</p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      setForm(f => ({ ...f, alternateResponse: auraSuggestion }));
+                      setAuraSuggestion(null);
+                    }}
+                  >
+                    Use this response
+                  </Button>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="alternateResponse" className="text-sm font-medium">Alternate Response</Label>
                 <Textarea

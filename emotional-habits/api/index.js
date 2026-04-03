@@ -5,6 +5,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 
 // server/routers.ts
 import { z as z2 } from "zod";
+import Anthropic from "@anthropic-ai/sdk";
 
 // shared/const.ts
 var COOKIE_NAME = "app_session_id";
@@ -44,7 +45,8 @@ var ENV = {
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? ""
+  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? ""
 };
 
 // server/_core/notification.ts
@@ -485,6 +487,38 @@ var appRouter = router({
     delete: protectedProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ ctx, input }) => {
       await deleteEmotionalEntry(input.id, ctx.user.id);
       return { success: true };
+    }),
+    /** Generate an Aura AI insight using CBT + NVC */
+    auraInsight: protectedProcedure.input(z2.object({
+      domain: z2.string(),
+      goal: z2.string(),
+      intention: z2.string(),
+      trigger: z2.string(),
+      emotionFelt: z2.string(),
+      behaviour: z2.string()
+    })).mutation(async ({ input }) => {
+      if (!ENV.anthropicApiKey) throw new Error("Aura is not configured.");
+      const client = new Anthropic({ apiKey: ENV.anthropicApiKey });
+      const prompt = `You are Aura, an empathetic AI coach trained in Cognitive Behavioural Therapy (CBT) and Non-Violent Communication (NVC). A user has shared a professional interaction they found emotionally challenging.
+
+Context:
+- Relationship: ${input.domain}
+- Event/Scenario: ${input.goal}
+- Intention going in: ${input.intention}
+- Trigger: ${input.trigger}
+- Emotion felt: ${input.emotionFelt}
+- Behaviour response: ${input.behaviour}
+
+Using CBT principles (identifying cognitive distortions, reframing thoughts) and NVC principles (observations, feelings, needs, requests), craft a specific, practical alternate response this person could use next time.
+
+Write 2\u20134 sentences. Be warm, direct, and concrete. Do not use bullet points or headers \u2014 write as a single flowing paragraph they can rehearse or adapt. Start with "Next time, ..."`;
+      const message = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 300,
+        messages: [{ role: "user", content: prompt }]
+      });
+      const text2 = message.content[0].type === "text" ? message.content[0].text : "";
+      return { suggestion: text2 };
     }),
     /** Get stats for dashboard */
     stats: protectedProcedure.query(async ({ ctx }) => {

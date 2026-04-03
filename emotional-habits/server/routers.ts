@@ -1,4 +1,5 @@
 import { z } from "zod";
+import Anthropic from "@anthropic-ai/sdk";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -174,6 +175,42 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await deleteEmotionalEntry(input.id, ctx.user.id);
         return { success: true };
+      }),
+
+    /** Generate an Aura AI insight using CBT + NVC */
+    auraInsight: protectedProcedure
+      .input(z.object({
+        domain: z.string(),
+        goal: z.string(),
+        intention: z.string(),
+        trigger: z.string(),
+        emotionFelt: z.string(),
+        behaviour: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        if (!ENV.anthropicApiKey) throw new Error("Aura is not configured.");
+        const client = new Anthropic({ apiKey: ENV.anthropicApiKey });
+        const prompt = `You are Aura, an empathetic AI coach trained in Cognitive Behavioural Therapy (CBT) and Non-Violent Communication (NVC). A user has shared a professional interaction they found emotionally challenging.
+
+Context:
+- Relationship: ${input.domain}
+- Event/Scenario: ${input.goal}
+- Intention going in: ${input.intention}
+- Trigger: ${input.trigger}
+- Emotion felt: ${input.emotionFelt}
+- Behaviour response: ${input.behaviour}
+
+Using CBT principles (identifying cognitive distortions, reframing thoughts) and NVC principles (observations, feelings, needs, requests), craft a specific, practical alternate response this person could use next time.
+
+Write 2–4 sentences. Be warm, direct, and concrete. Do not use bullet points or headers — write as a single flowing paragraph they can rehearse or adapt. Start with "Next time, ..."`;
+
+        const message = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 300,
+          messages: [{ role: "user", content: prompt }],
+        });
+        const text = message.content[0].type === "text" ? message.content[0].text : "";
+        return { suggestion: text };
       }),
 
     /** Get stats for dashboard */
