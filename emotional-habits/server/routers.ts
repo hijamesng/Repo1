@@ -205,7 +205,7 @@ Using CBT principles (identifying cognitive distortions, reframing thoughts) and
 Write 2–4 sentences. Be warm, direct, and concrete. Do not use bullet points or headers — write as a single flowing paragraph they can rehearse or adapt. Start with "Next time, ..."`;
 
         const message = await client.messages.create({
-          model: "claude-haiku-4-5-20251001",
+          model: "claude-3-5-haiku-20241022",
           max_tokens: 300,
           messages: [{ role: "user", content: prompt }],
         });
