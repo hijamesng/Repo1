@@ -44,6 +44,12 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+supabase.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
+    queryClient.clear();
+  }
+});
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
