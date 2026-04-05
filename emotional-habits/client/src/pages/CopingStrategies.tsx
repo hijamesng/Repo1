@@ -207,8 +207,8 @@ function CopingStrategiesContent() {
             AI-personalised strategies grounded in neuroscience, CBT, and NVC — based on your emotional habit patterns.
           </p>
         </div>
-        <div className="flex gap-2 shrink-0">
-          <Button variant="outline" className="gap-2" onClick={exportPDF} disabled={!strategies || strategies.length === 0}>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <Button variant="outline" className="gap-2" onClick={exportPDF}>
             <Download className="w-4 h-4" />
             Export PDF
           </Button>
