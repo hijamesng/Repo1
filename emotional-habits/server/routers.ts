@@ -21,6 +21,7 @@ import {
   getCopingStrategies,
   addCopingStrategy,
   deleteCopingStrategy,
+  updateCopingStrategy,
 } from "./db";
 
 const domainEnum = z.enum(["Boss", "Colleague", "Customer"]);
@@ -58,6 +59,13 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
         await deleteCopingStrategy(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({ id: z.number(), content: z.string().min(1).max(500) }))
+      .mutation(async ({ ctx, input }) => {
+        await updateCopingStrategy(input.id, ctx.user.id, input.content);
         return { success: true };
       }),
 

@@ -189,3 +189,9 @@ export async function deleteCopingStrategy(id: number, userId: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(copingStrategies).where(and(eq(copingStrategies.id, id), eq(copingStrategies.userId, userId)));
 }
+
+export async function updateCopingStrategy(id: number, userId: number, content: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(copingStrategies).set({ content }).where(and(eq(copingStrategies.id, id), eq(copingStrategies.userId, userId)));
+}

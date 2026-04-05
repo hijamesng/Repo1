@@ -390,6 +390,11 @@ async function deleteCopingStrategy(id, userId) {
   if (!db) throw new Error("Database not available");
   await db.delete(copingStrategies).where(and(eq(copingStrategies.id, id), eq(copingStrategies.userId, userId)));
 }
+async function updateCopingStrategy(id, userId, content) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(copingStrategies).set({ content }).where(and(eq(copingStrategies.id, id), eq(copingStrategies.userId, userId)));
+}
 
 // server/routers.ts
 var domainEnum2 = z2.enum(["Boss", "Colleague", "Customer"]);
@@ -418,6 +423,10 @@ var appRouter = router({
     }),
     delete: protectedProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ ctx, input }) => {
       await deleteCopingStrategy(input.id, ctx.user.id);
+      return { success: true };
+    }),
+    update: protectedProcedure.input(z2.object({ id: z2.number(), content: z2.string().min(1).max(500) })).mutation(async ({ ctx, input }) => {
+      await updateCopingStrategy(input.id, ctx.user.id, input.content);
       return { success: true };
     }),
     generate: protectedProcedure.mutation(async ({ ctx }) => {
