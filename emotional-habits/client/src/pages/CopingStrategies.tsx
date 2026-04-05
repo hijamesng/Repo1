@@ -111,9 +111,21 @@ function CopingStrategiesContent() {
         } else {
           for (let i = 0; i < section.items.length; i++) {
             const s = section.items[i];
+
+            // Set content font BEFORE splitTextToSize so wrapping uses correct metrics
+            doc.setFontSize(9.5);
+            doc.setFont("helvetica", "normal");
             const contentLines = doc.splitTextToSize(s.content ?? "", contentWidth - 18);
+
+            // Get actual line height from jsPDF in document units (mm)
+            const lineH: number = typeof (doc as any).getLineHeight === "function"
+              ? (doc as any).getLineHeight()
+              : 5.5;
+
             const hasRef = !!s.entryRef;
-            const blockH = 6 + contentLines.length * 5.5 + (hasRef ? 5 : 0) + 6;
+            // top pad(8) + text lines + gap(2) + ref(hasRef?6:0) + bottom pad(5)
+            const textH = contentLines.length * lineH;
+            const blockH = 8 + textH + (hasRef ? 8 : 0) + 5;
 
             if (y + blockH > pageHeight - 16) { doc.addPage(); y = 16; }
 
@@ -131,20 +143,18 @@ function CopingStrategiesContent() {
             doc.setFont("helvetica", "bold");
             doc.text(`${i + 1}.`, margin + 10, y + 8);
 
-            // Content text
-            doc.setFontSize(9.5);
+            // Content text (font already set to 9.5pt normal above)
             doc.setTextColor(40, 30, 20);
             doc.setFont("helvetica", "normal");
             doc.text(contentLines, margin + 17, y + 8);
 
-            const afterContent = y + 8 + contentLines.length * 5.5;
-
-            // Entry ref
+            // Entry ref — placed below last line of content
             if (hasRef && s.entryRef) {
+              const refY = y + 8 + textH + 2;
               doc.setFontSize(7.5);
               doc.setTextColor(section.color[0], section.color[1], section.color[2]);
               doc.setFont("helvetica", "bold");
-              doc.text(s.entryRef, margin + 17, afterContent);
+              doc.text(s.entryRef, margin + 17, refY);
             }
 
             // AI badge
