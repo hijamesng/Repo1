@@ -397,7 +397,7 @@ function StrategyColumn({
               <option value="">No specific entry (general strategy)</option>
               {entries.map(e => (
                 <option key={e.id} value={String(e.id)}>
-                  {e.domain} · {e.emotionFelt} — {format(new Date(e.createdAt), "dd/MM/yy")}
+                  {e.domain} · {e.emotionFelt}
                 </option>
               ))}
             </select>
