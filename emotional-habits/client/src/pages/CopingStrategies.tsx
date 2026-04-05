@@ -348,8 +348,7 @@ function StrategyColumn({
                 ) : (
                   <>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground leading-relaxed">{s.content}</p>
-                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         {s.entryRef && (
                           <span className="text-[10px] font-semibold bg-primary/8 text-primary px-1.5 py-0.5 rounded border border-primary/20">
                             {s.entryRef}
@@ -359,6 +358,7 @@ function StrategyColumn({
                           <span className="text-[10px] font-semibold text-primary/40 uppercase tracking-wider">AI</span>
                         )}
                       </div>
+                      <p className="text-sm text-foreground leading-relaxed">{s.content}</p>
                     </div>
                     <button
                       onClick={() => startEdit(s)}
