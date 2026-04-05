@@ -56,6 +56,7 @@ export const copingStrategies = pgTable("coping_strategies", {
   type: text("type").notNull(), // 'breaking' | 'building'
   content: text("content").notNull(),
   source: text("source").notNull().default("user"), // 'ai' | 'user'
+  entryRef: text("entryRef"), // e.g. "Colleague, Angry" or "Boss, Frustrated, Resentful"
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

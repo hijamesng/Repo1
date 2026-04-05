@@ -240,6 +240,8 @@ var copingStrategies = pgTable("coping_strategies", {
   content: text("content").notNull(),
   source: text("source").notNull().default("user"),
   // 'ai' | 'user'
+  entryRef: text("entryRef"),
+  // e.g. "Colleague, Angry" or "Boss, Frustrated, Resentful"
   createdAt: timestamp("createdAt").defaultNow().notNull()
 });
 
@@ -379,10 +381,10 @@ async function getCopingStrategies(userId) {
   if (!db) throw new Error("Database not available");
   return db.select().from(copingStrategies).where(eq(copingStrategies.userId, userId)).orderBy(desc(copingStrategies.createdAt));
 }
-async function addCopingStrategy(userId, type, content, source) {
+async function addCopingStrategy(userId, type, content, source, entryRef) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [row] = await db.insert(copingStrategies).values({ userId, type, content, source }).returning();
+  const [row] = await db.insert(copingStrategies).values({ userId, type, content, source, entryRef: entryRef ?? null }).returning();
   return row;
 }
 async function deleteCopingStrategy(id, userId) {
@@ -417,9 +419,10 @@ var appRouter = router({
     add: protectedProcedure.input(z2.object({
       type: z2.enum(["breaking", "building"]),
       content: z2.string().min(1).max(500),
-      source: z2.enum(["ai", "user"]).default("user")
+      source: z2.enum(["ai", "user"]).default("user"),
+      entryRef: z2.string().max(200).optional()
     })).mutation(async ({ ctx, input }) => {
-      return addCopingStrategy(ctx.user.id, input.type, input.content, input.source);
+      return addCopingStrategy(ctx.user.id, input.type, input.content, input.source, input.entryRef);
     }),
     delete: protectedProcedure.input(z2.object({ id: z2.number() })).mutation(async ({ ctx, input }) => {
       await deleteCopingStrategy(input.id, ctx.user.id);
@@ -433,24 +436,24 @@ var appRouter = router({
       if (!ENV.anthropicApiKey) throw new Error("AI not configured.");
       const entries = await getEmotionalEntriesByUser(ctx.user.id, 20, 0);
       if (entries.length === 0) throw new Error("Add some entries first so the AI can analyse your patterns.");
-      const summary = entries.slice(0, 10).map(
-        (e) => `- Trigger: ${e.trigger} | Emotion: ${e.emotionFelt} | Behaviour: ${e.behaviour} | Alternate: ${e.alternateResponse}`
+      const top10 = entries.slice(0, 10);
+      const summary = top10.map(
+        (e, i) => `Entry ${i + 1} [${e.domain}, ${e.emotionFelt}]: Trigger: ${e.trigger} | Behaviour: ${e.behaviour} | Alternate: ${e.alternateResponse}`
       ).join("\n");
       const client = new Anthropic({ apiKey: ENV.anthropicApiKey });
       const message = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
+        max_tokens: 800,
         messages: [{
           role: "user",
-          content: `You are an AI Coping Strategist trained in neuroscience and the psychology of habit formation. You apply the habit loop (cue-routine-reward), neuroplasticity principles, Cognitive Behavioural Therapy (CBT), and Non-Violent Communication (NVC) to help people rewrite unhelpful patterns in professional relationships.
+          content: `You are an AI Coping Strategist trained in neuroscience, CBT, and NVC. Each entry below is labelled with its domain and emotion(s).
 
-Based on this person's emotional habit patterns:
 ${summary}
 
-Generate exactly 3 strategies to BREAK OLD HABITS and 3 strategies to BUILD NEW HABITS. Each strategy must be specific, actionable, and rooted in at least one of: neuroscience, CBT, or NVC. Where relevant, use NVC language (observations, feelings, needs, requests). Keep each strategy to 1\u20132 concise sentences.
+Generate exactly 3 strategies to BREAK OLD HABITS and 3 to BUILD NEW HABITS. For each strategy, also include a short "ref" label (e.g. "Colleague, Angry" or "Boss, Frustrated, Resentful") taken directly from the most relevant entry's domain and emotionFelt. Keep each strategy to 1\u20132 concise sentences.
 
 Respond ONLY with valid JSON in this exact format:
-{"breaking":["strategy 1","strategy 2","strategy 3"],"building":["strategy 1","strategy 2","strategy 3"]}`
+{"breaking":[{"content":"strategy 1","ref":"Domain, Emotion"},{"content":"strategy 2","ref":"Domain, Emotion"},{"content":"strategy 3","ref":"Domain, Emotion"}],"building":[{"content":"strategy 1","ref":"Domain, Emotion"},{"content":"strategy 2","ref":"Domain, Emotion"},{"content":"strategy 3","ref":"Domain, Emotion"}]}`
         }]
       });
       const text2 = message.content[0].type === "text" ? message.content[0].text : "{}";

@@ -1,11 +1,12 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { Bot, Check, Pencil, PlusCircle, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 export default function CopingStrategies() {
   return (
@@ -18,8 +19,8 @@ export default function CopingStrategies() {
 function CopingStrategiesContent() {
   const utils = trpc.useUtils();
   const { data: strategies, isLoading } = trpc.coping.list.useQuery();
-  const [breakingInput, setBreakingInput] = useState("");
-  const [buildingInput, setBuildingInput] = useState("");
+  const { data: entriesData } = trpc.entries.list.useQuery({ limit: 100, offset: 0 });
+  const entries = entriesData?.entries ?? [];
 
   const breaking = strategies?.filter(s => s.type === "breaking") ?? [];
   const building = strategies?.filter(s => s.type === "building") ?? [];
@@ -32,8 +33,8 @@ function CopingStrategiesContent() {
   const generate = trpc.coping.generate.useMutation({
     onSuccess: async (data) => {
       const allNew = [
-        ...data.breaking.map(content => ({ type: "breaking" as const, content, source: "ai" as const })),
-        ...data.building.map(content => ({ type: "building" as const, content, source: "ai" as const })),
+        ...data.breaking.map(s => ({ type: "breaking" as const, content: s.content, source: "ai" as const, entryRef: s.ref })),
+        ...data.building.map(s => ({ type: "building" as const, content: s.content, source: "ai" as const, entryRef: s.ref })),
       ];
       for (const s of allNew) {
         await addMutation.mutateAsync(s);
@@ -56,19 +57,10 @@ function CopingStrategiesContent() {
     onError: (err) => toast.error("Could not update strategy", { description: err.message }),
   });
 
-  const handleAdd = (type: "breaking" | "building") => {
-    const content = type === "breaking" ? breakingInput.trim() : buildingInput.trim();
-    if (!content) return;
-    addMutation.mutate({ type, content, source: "user" });
-    if (type === "breaking") setBreakingInput("");
-    else setBuildingInput("");
-  };
-
   const isGenerating = generate.isPending || addMutation.isPending;
 
   return (
     <div className="max-w-4xl mx-auto py-2 space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Coping Strategist</h1>
@@ -76,11 +68,7 @@ function CopingStrategiesContent() {
             AI-personalised strategies grounded in neuroscience, CBT, and NVC — based on your emotional habit patterns.
           </p>
         </div>
-        <Button
-          className="gap-2 shrink-0"
-          onClick={() => generate.mutate()}
-          disabled={isGenerating}
-        >
+        <Button className="gap-2 shrink-0" onClick={() => generate.mutate()} disabled={isGenerating}>
           {isGenerating
             ? <><Bot className="w-4 h-4 animate-pulse" /> Generating…</>
             : <><Sparkles className="w-4 h-4" /> Generate AI Strategies</>
@@ -88,18 +76,15 @@ function CopingStrategiesContent() {
         </Button>
       </div>
 
-      {/* Info banner */}
       <Card className="border border-border bg-accent/20 shadow-none">
         <CardContent className="p-4">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Click <strong>Generate AI Strategies</strong> to have the AI analyse your last 10 entries and suggest
-            strategies for building new habits and breaking old ones. You can also add or edit your own strategies.
-            Hover any strategy to reveal the edit and delete buttons.
+            Click <strong>Generate AI Strategies</strong> to have the AI analyse your entries and suggest strategies tagged to the relevant entry.
+            Hover any strategy to reveal edit and delete. Add your own by selecting an entry and describing your strategy.
           </p>
         </CardContent>
       </Card>
 
-      {/* Two columns — Building first, Breaking second */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="h-64 bg-muted rounded-xl animate-pulse" />
@@ -107,29 +92,26 @@ function CopingStrategiesContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Building New Habits — 1st */}
           <StrategyColumn
             title="Building New Habits"
             emoji="🌱"
+            type="building"
             strategies={building}
-            inputValue={buildingInput}
-            onInputChange={setBuildingInput}
-            onAdd={() => handleAdd("building")}
+            entries={entries}
+            onAdd={(content, entryRef) => addMutation.mutate({ type: "building", content, source: "user", entryRef })}
             onDelete={(id) => deleteMutation.mutate({ id })}
             onUpdate={(id, content) => updateMutation.mutate({ id, content })}
             isAdding={addMutation.isPending}
             isDeleting={deleteMutation.isPending}
             isUpdating={updateMutation.isPending}
           />
-
-          {/* Breaking Old Habits — 2nd */}
           <StrategyColumn
             title="Breaking Old Habits"
             emoji="🔓"
+            type="breaking"
             strategies={breaking}
-            inputValue={breakingInput}
-            onInputChange={setBreakingInput}
-            onAdd={() => handleAdd("breaking")}
+            entries={entries}
+            onAdd={(content, entryRef) => addMutation.mutate({ type: "breaking", content, source: "user", entryRef })}
             onDelete={(id) => deleteMutation.mutate({ id })}
             onUpdate={(id, content) => updateMutation.mutate({ id, content })}
             isAdding={addMutation.isPending}
@@ -142,18 +124,19 @@ function CopingStrategiesContent() {
   );
 }
 
-type Strategy = { id: number; content: string; source: string };
+type Strategy = { id: number; content: string; source: string; entryRef?: string | null };
+type Entry = { id: number; domain: string; emotionFelt: string; goal: string; createdAt: Date | string };
 
 function StrategyColumn({
-  title, emoji, strategies, inputValue, onInputChange, onAdd, onDelete, onUpdate,
+  title, emoji, strategies, entries, onAdd, onDelete, onUpdate,
   isAdding, isDeleting, isUpdating,
 }: {
   title: string;
   emoji: string;
+  type: "breaking" | "building";
   strategies: Strategy[];
-  inputValue: string;
-  onInputChange: (v: string) => void;
-  onAdd: () => void;
+  entries: Entry[];
+  onAdd: (content: string, entryRef?: string) => void;
   onDelete: (id: number) => void;
   onUpdate: (id: number, content: string) => void;
   isAdding: boolean;
@@ -162,6 +145,8 @@ function StrategyColumn({
 }) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [newContent, setNewContent] = useState("");
+  const [selectedEntryId, setSelectedEntryId] = useState<string>("");
 
   const startEdit = (s: Strategy) => {
     setEditingId(s.id);
@@ -176,6 +161,15 @@ function StrategyColumn({
 
   const cancelEdit = () => setEditingId(null);
 
+  const handleAdd = () => {
+    if (!newContent.trim()) return;
+    const entry = entries.find(e => String(e.id) === selectedEntryId);
+    const entryRef = entry ? `${entry.domain}, ${entry.emotionFelt}` : undefined;
+    onAdd(newContent.trim(), entryRef);
+    setNewContent("");
+    setSelectedEntryId("");
+  };
+
   return (
     <Card className="border border-border shadow-sm">
       <CardHeader className="pb-3 pt-5 px-5">
@@ -188,7 +182,8 @@ function StrategyColumn({
         </CardTitle>
       </CardHeader>
       <CardContent className="px-5 pb-5">
-        <div className="space-y-1 min-h-[80px] mb-4">
+        {/* Strategy list */}
+        <div className="space-y-1 min-h-[80px] mb-5">
           {strategies.length === 0 ? (
             <p className="text-sm text-muted-foreground italic py-2">
               No strategies yet. Generate AI suggestions or add your own below.
@@ -197,37 +192,37 @@ function StrategyColumn({
             strategies.map(s => (
               <div key={s.id} className="flex items-start gap-2 group py-2.5 border-b border-border/40 last:border-0">
                 {editingId === s.id ? (
-                  <div className="flex-1 flex gap-2">
-                    <Input
+                  <div className="flex-1 flex flex-col gap-2">
+                    <Textarea
                       value={editValue}
                       onChange={e => setEditValue(e.target.value)}
-                      onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") cancelEdit(); }}
-                      className="text-sm h-8 flex-1"
+                      onKeyDown={e => { if (e.key === "Escape") cancelEdit(); }}
+                      className="text-sm min-h-[80px] resize-none"
                       autoFocus
                     />
-                    <button
-                      onClick={saveEdit}
-                      disabled={isUpdating || !editValue.trim()}
-                      className="p-1 rounded hover:bg-primary/10 text-primary shrink-0"
-                      aria-label="Save"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={cancelEdit}
-                      className="p-1 rounded hover:bg-muted text-muted-foreground shrink-0"
-                      aria-label="Cancel"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex gap-2 justify-end">
+                      <Button size="sm" variant="outline" className="h-7 px-3 gap-1 text-xs" onClick={cancelEdit}>
+                        <X className="w-3 h-3" /> Cancel
+                      </Button>
+                      <Button size="sm" className="h-7 px-3 gap-1 text-xs" onClick={saveEdit} disabled={isUpdating || !editValue.trim()}>
+                        <Check className="w-3 h-3" /> Save
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground leading-relaxed">{s.content}</p>
-                      {s.source === "ai" && (
-                        <span className="text-[10px] font-semibold text-primary/50 uppercase tracking-wider">AI Generated</span>
-                      )}
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        {s.entryRef && (
+                          <span className="text-[10px] font-semibold bg-primary/8 text-primary px-1.5 py-0.5 rounded border border-primary/20">
+                            {s.entryRef}
+                          </span>
+                        )}
+                        {s.source === "ai" && (
+                          <span className="text-[10px] font-semibold text-primary/40 uppercase tracking-wider">AI</span>
+                        )}
+                      </div>
                     </div>
                     <button
                       onClick={() => startEdit(s)}
@@ -250,22 +245,39 @@ function StrategyColumn({
             ))
           )}
         </div>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Add your own strategy…"
-            value={inputValue}
-            onChange={e => onInputChange(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && onAdd()}
-            className="text-sm h-9"
+
+        {/* Add new strategy */}
+        <div className="border-t border-border/50 pt-4 space-y-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Add your own</p>
+          {entries.length > 0 && (
+            <select
+              value={selectedEntryId}
+              onChange={e => setSelectedEntryId(e.target.value)}
+              className="w-full text-sm border border-input rounded-md px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              <option value="">No specific entry (general strategy)</option>
+              {entries.map(e => (
+                <option key={e.id} value={String(e.id)}>
+                  {e.domain} · {e.emotionFelt} — {format(new Date(e.createdAt), "dd/MM/yy")}
+                </option>
+              ))}
+            </select>
+          )}
+          <Textarea
+            placeholder="Describe your strategy…"
+            value={newContent}
+            onChange={e => setNewContent(e.target.value)}
+            className="text-sm min-h-[80px] resize-none"
           />
           <Button
             size="sm"
             variant="outline"
-            className="shrink-0 h-9 px-3"
-            onClick={onAdd}
-            disabled={!inputValue.trim() || isAdding}
+            className="w-full gap-2"
+            onClick={handleAdd}
+            disabled={!newContent.trim() || isAdding}
           >
             <PlusCircle className="w-4 h-4" />
+            Add Strategy
           </Button>
         </div>
       </CardContent>

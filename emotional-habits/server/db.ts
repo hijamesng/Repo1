@@ -177,10 +177,10 @@ export async function getCopingStrategies(userId: number) {
     .orderBy(desc(copingStrategies.createdAt));
 }
 
-export async function addCopingStrategy(userId: number, type: string, content: string, source: string) {
+export async function addCopingStrategy(userId: number, type: string, content: string, source: string, entryRef?: string | null) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [row] = await db.insert(copingStrategies).values({ userId, type, content, source }).returning();
+  const [row] = await db.insert(copingStrategies).values({ userId, type, content, source, entryRef: entryRef ?? null }).returning();
   return row;
 }
 

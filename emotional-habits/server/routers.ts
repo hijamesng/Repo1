@@ -50,9 +50,10 @@ export const appRouter = router({
         type: z.enum(["breaking", "building"]),
         content: z.string().min(1).max(500),
         source: z.enum(["ai", "user"]).default("user"),
+        entryRef: z.string().max(200).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        return addCopingStrategy(ctx.user.id, input.type, input.content, input.source);
+        return addCopingStrategy(ctx.user.id, input.type, input.content, input.source, input.entryRef);
       }),
 
     delete: protectedProcedure
@@ -74,32 +75,35 @@ export const appRouter = router({
       const entries = await getEmotionalEntriesByUser(ctx.user.id, 20, 0);
       if (entries.length === 0) throw new Error("Add some entries first so the AI can analyse your patterns.");
 
-      const summary = entries.slice(0, 10).map(e =>
-        `- Trigger: ${e.trigger} | Emotion: ${e.emotionFelt} | Behaviour: ${e.behaviour} | Alternate: ${e.alternateResponse}`
+      const top10 = entries.slice(0, 10);
+      const summary = top10.map((e, i) =>
+        `Entry ${i + 1} [${e.domain}, ${e.emotionFelt}]: Trigger: ${e.trigger} | Behaviour: ${e.behaviour} | Alternate: ${e.alternateResponse}`
       ).join("\n");
 
       const client = new Anthropic({ apiKey: ENV.anthropicApiKey });
       const message = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
+        max_tokens: 800,
         messages: [{
           role: "user",
-          content: `You are an AI Coping Strategist trained in neuroscience and the psychology of habit formation. You apply the habit loop (cue-routine-reward), neuroplasticity principles, Cognitive Behavioural Therapy (CBT), and Non-Violent Communication (NVC) to help people rewrite unhelpful patterns in professional relationships.
+          content: `You are an AI Coping Strategist trained in neuroscience, CBT, and NVC. Each entry below is labelled with its domain and emotion(s).
 
-Based on this person's emotional habit patterns:
 ${summary}
 
-Generate exactly 3 strategies to BREAK OLD HABITS and 3 strategies to BUILD NEW HABITS. Each strategy must be specific, actionable, and rooted in at least one of: neuroscience, CBT, or NVC. Where relevant, use NVC language (observations, feelings, needs, requests). Keep each strategy to 1–2 concise sentences.
+Generate exactly 3 strategies to BREAK OLD HABITS and 3 to BUILD NEW HABITS. For each strategy, also include a short "ref" label (e.g. "Colleague, Angry" or "Boss, Frustrated, Resentful") taken directly from the most relevant entry's domain and emotionFelt. Keep each strategy to 1–2 concise sentences.
 
 Respond ONLY with valid JSON in this exact format:
-{"breaking":["strategy 1","strategy 2","strategy 3"],"building":["strategy 1","strategy 2","strategy 3"]}`,
+{"breaking":[{"content":"strategy 1","ref":"Domain, Emotion"},{"content":"strategy 2","ref":"Domain, Emotion"},{"content":"strategy 3","ref":"Domain, Emotion"}],"building":[{"content":"strategy 1","ref":"Domain, Emotion"},{"content":"strategy 2","ref":"Domain, Emotion"},{"content":"strategy 3","ref":"Domain, Emotion"}]}`,
         }],
       });
 
       const text = message.content[0].type === "text" ? message.content[0].text : "{}";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("AI response could not be parsed.");
-      const parsed = JSON.parse(jsonMatch[0]) as { breaking: string[]; building: string[] };
+      const parsed = JSON.parse(jsonMatch[0]) as {
+        breaking: { content: string; ref: string }[];
+        building: { content: string; ref: string }[];
+      };
       return parsed;
     }),
   }),
