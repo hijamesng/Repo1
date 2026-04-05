@@ -18,6 +18,9 @@ import {
   getAllUsers,
   updateUserRole,
   deleteUserById,
+  getCopingStrategies,
+  addCopingStrategy,
+  deleteCopingStrategy,
 } from "./db";
 
 const domainEnum = z.enum(["Boss", "Colleague", "Customer"]);
@@ -35,6 +38,63 @@ const emotionalEntryInput = z.object({
 
 export const appRouter = router({
   system: systemRouter,
+
+  coping: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getCopingStrategies(ctx.user.id);
+    }),
+
+    add: protectedProcedure
+      .input(z.object({
+        type: z.enum(["breaking", "building"]),
+        content: z.string().min(1).max(500),
+        source: z.enum(["ai", "user"]).default("user"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return addCopingStrategy(ctx.user.id, input.type, input.content, input.source);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteCopingStrategy(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    generate: protectedProcedure.mutation(async ({ ctx }) => {
+      if (!ENV.anthropicApiKey) throw new Error("AI not configured.");
+      const entries = await getEmotionalEntriesByUser(ctx.user.id, 20, 0);
+      if (entries.length === 0) throw new Error("Add some entries first so the AI can analyse your patterns.");
+
+      const summary = entries.slice(0, 10).map(e =>
+        `- Trigger: ${e.trigger} | Emotion: ${e.emotionFelt} | Behaviour: ${e.behaviour} | Alternate: ${e.alternateResponse}`
+      ).join("\n");
+
+      const client = new Anthropic({ apiKey: ENV.anthropicApiKey });
+      const message = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 600,
+        messages: [{
+          role: "user",
+          content: `You are an AI Coping Strategist trained in neuroscience and the psychology of habit formation. You apply the habit loop (cue-routine-reward), neuroplasticity principles, Cognitive Behavioural Therapy (CBT), and Non-Violent Communication (NVC) to help people rewrite unhelpful patterns in professional relationships.
+
+Based on this person's emotional habit patterns:
+${summary}
+
+Generate exactly 3 strategies to BREAK OLD HABITS and 3 strategies to BUILD NEW HABITS. Each strategy must be specific, actionable, and rooted in at least one of: neuroscience, CBT, or NVC. Where relevant, use NVC language (observations, feelings, needs, requests). Keep each strategy to 1–2 concise sentences.
+
+Respond ONLY with valid JSON in this exact format:
+{"breaking":["strategy 1","strategy 2","strategy 3"],"building":["strategy 1","strategy 2","strategy 3"]}`,
+        }],
+      });
+
+      const text = message.content[0].type === "text" ? message.content[0].text : "{}";
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("AI response could not be parsed.");
+      const parsed = JSON.parse(jsonMatch[0]) as { breaking: string[]; building: string[] };
+      return parsed;
+    }),
+  }),
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

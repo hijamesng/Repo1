@@ -1,7 +1,7 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { emotionalEntries, InsertEmotionalEntry, InsertUser, users } from "../drizzle/schema";
+import { copingStrategies, emotionalEntries, InsertEmotionalEntry, InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -165,4 +165,27 @@ export async function deleteUserById(id: number): Promise<void> {
   if (!db) throw new Error("Database not available");
   await db.delete(emotionalEntries).where(eq(emotionalEntries.userId, id));
   await db.delete(users).where(eq(users.id, id));
+}
+
+// ─── Coping Strategies ────────────────────────────────────────────────────────
+
+export async function getCopingStrategies(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select().from(copingStrategies)
+    .where(eq(copingStrategies.userId, userId))
+    .orderBy(desc(copingStrategies.createdAt));
+}
+
+export async function addCopingStrategy(userId: number, type: string, content: string, source: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [row] = await db.insert(copingStrategies).values({ userId, type, content, source }).returning();
+  return row;
+}
+
+export async function deleteCopingStrategy(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(copingStrategies).where(and(eq(copingStrategies.id, id), eq(copingStrategies.userId, userId)));
 }

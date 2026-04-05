@@ -49,3 +49,14 @@ export const emotionalEntries = pgTable("emotional_entries", {
 
 export type EmotionalEntry = typeof emotionalEntries.$inferSelect;
 export type InsertEmotionalEntry = typeof emotionalEntries.$inferInsert;
+
+export const copingStrategies = pgTable("coping_strategies", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  type: text("type").notNull(), // 'breaking' | 'building'
+  content: text("content").notNull(),
+  source: text("source").notNull().default("user"), // 'ai' | 'user'
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CopingStrategy = typeof copingStrategies.$inferSelect;

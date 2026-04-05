@@ -13,6 +13,7 @@ import EntryDetail from "./pages/EntryDetail";
 import EditEntry from "./pages/EditEntry";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import CopingStrategies from "./pages/CopingStrategies";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/history" component={History} />
       <Route path="/entry/:id" component={EntryDetail} />
       <Route path="/entry/:id/edit" component={EditEntry} />
+      <Route path="/coping" component={CopingStrategies} />
       <Route path="/profile" component={Profile} />
       <Route path="/admin" component={Admin} />
       <Route path="/404" component={NotFound} />

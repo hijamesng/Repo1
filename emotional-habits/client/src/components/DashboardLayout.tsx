@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
-import { LayoutDashboard, LogOut, PanelLeft, PlusCircle, BookOpen, Heart, Shield, User } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, PlusCircle, BookOpen, Brain, Heart, Shield, User } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -32,6 +32,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
   { icon: PlusCircle, label: "New Entry", path: "/new-entry" },
   { icon: BookOpen, label: "History", path: "/history" },
+  { icon: Brain, label: "Coping Strategist", path: "/coping" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
