@@ -60,142 +60,123 @@ function CopingStrategiesContent() {
   const isGenerating = generate.isPending || addMutation.isPending;
 
   const exportPDF = async () => {
-    if (!strategies || strategies.length === 0) {
-      toast.error("No strategies to export");
-      return;
-    }
-    const { default: jsPDF } = await import("jspdf");
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 16;
-    const contentWidth = pageWidth - margin * 2;
-    let y = 0;
+    try {
+      const allStrategies = strategies ?? [];
+      const { default: jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 16;
+      const contentWidth = pageWidth - margin * 2;
+      let y = 24;
 
-    const checkNewPage = (needed: number) => {
-      if (y + needed > pageHeight - 16) { doc.addPage(); y = 16; }
-    };
-
-    // Header bar
-    doc.setFillColor(139, 90, 43);
-    doc.rect(0, 0, pageWidth, 16, "F");
-    doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.text("EmotiFlow  —  Coping Strategist Report", margin, 11);
-    y = 24;
-
-    // Export date
-    doc.setFontSize(9);
-    doc.setTextColor(120, 100, 80);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Exported ${format(new Date(), "EEEE, MMMM d, yyyy")}  |  ${building.length + breaking.length} strategies`, margin, y);
-    y += 12;
-
-    const renderSection = (
-      title: string,
-      items: typeof building,
-      bgColor: [number, number, number],
-      labelColor: [number, number, number],
-      bulletColor: [number, number, number]
-    ) => {
-      // Section heading
-      checkNewPage(14);
-      doc.setFontSize(11);
-      doc.setTextColor(...labelColor);
+      // Header bar
+      doc.setFillColor(139, 90, 43);
+      doc.rect(0, 0, pageWidth, 16, "F");
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
-      doc.text(title, margin, y);
-      y += 8;
+      doc.text("EmotiFlow  —  Coping Strategist Report", margin, 11);
 
-      if (items.length === 0) {
-        checkNewPage(10);
-        doc.setFontSize(9);
-        doc.setTextColor(160, 150, 140);
-        doc.setFont("helvetica", "italic");
-        doc.text("No strategies yet.", margin + 4, y);
-        y += 10;
-        return;
+      // Export date
+      doc.setFontSize(9);
+      doc.setTextColor(120, 100, 80);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `Exported ${format(new Date(), "EEEE, MMMM d, yyyy")}  |  ${allStrategies.length} strategies`,
+        margin, y
+      );
+      y += 12;
+
+      const sections = [
+        { title: "Building New Habits", items: allStrategies.filter(s => s.type === "building"), bg: [240, 248, 242] as const, color: [40, 120, 70] as const },
+        { title: "Breaking Old Habits", items: allStrategies.filter(s => s.type === "breaking"), bg: [248, 244, 238] as const, color: [120, 80, 40] as const },
+      ];
+
+      for (const section of sections) {
+        // Section heading
+        if (y + 14 > pageHeight - 16) { doc.addPage(); y = 16; }
+        doc.setFontSize(11);
+        doc.setTextColor(section.color[0], section.color[1], section.color[2]);
+        doc.setFont("helvetica", "bold");
+        doc.text(section.title, margin, y);
+        y += 8;
+
+        if (section.items.length === 0) {
+          doc.setFontSize(9);
+          doc.setTextColor(160, 150, 140);
+          doc.setFont("helvetica", "italic");
+          doc.text("No strategies yet.", margin + 4, y);
+          y += 10;
+        } else {
+          for (let i = 0; i < section.items.length; i++) {
+            const s = section.items[i];
+            const contentLines = doc.splitTextToSize(s.content ?? "", contentWidth - 18);
+            const hasRef = !!s.entryRef;
+            const blockH = 6 + contentLines.length * 5.5 + (hasRef ? 5 : 0) + 6;
+
+            if (y + blockH > pageHeight - 16) { doc.addPage(); y = 16; }
+
+            // Block background
+            doc.setFillColor(section.bg[0], section.bg[1], section.bg[2]);
+            doc.roundedRect(margin, y, contentWidth, blockH, 2, 2, "F");
+
+            // Bullet circle
+            doc.setFillColor(section.color[0], section.color[1], section.color[2]);
+            doc.circle(margin + 6, y + 7, 1.8, "F");
+
+            // Number
+            doc.setFontSize(8);
+            doc.setTextColor(section.color[0], section.color[1], section.color[2]);
+            doc.setFont("helvetica", "bold");
+            doc.text(`${i + 1}.`, margin + 10, y + 8);
+
+            // Content text
+            doc.setFontSize(9.5);
+            doc.setTextColor(40, 30, 20);
+            doc.setFont("helvetica", "normal");
+            doc.text(contentLines, margin + 17, y + 8);
+
+            const afterContent = y + 8 + contentLines.length * 5.5;
+
+            // Entry ref
+            if (hasRef && s.entryRef) {
+              doc.setFontSize(7.5);
+              doc.setTextColor(section.color[0], section.color[1], section.color[2]);
+              doc.setFont("helvetica", "bold");
+              doc.text(s.entryRef, margin + 17, afterContent);
+            }
+
+            // AI badge
+            if (s.source === "ai") {
+              doc.setFontSize(6.5);
+              doc.setTextColor(160, 140, 120);
+              doc.setFont("helvetica", "bold");
+              doc.text("AI", pageWidth - margin - 8, y + 8);
+            }
+
+            y += blockH + 3;
+          }
+        }
+        y += 6;
       }
 
-      items.forEach((s, i) => {
-        const contentLines = doc.splitTextToSize(s.content, contentWidth - 18);
-        const refLine = s.entryRef ? 1 : 0;
-        const blockH = 6 + contentLines.length * 5.5 + refLine * 5 + 6;
-        checkNewPage(blockH);
-
-        // Block background
-        doc.setFillColor(...bgColor);
-        doc.roundedRect(margin, y, contentWidth, blockH, 2, 2, "F");
-
-        // Bullet
-        doc.setFillColor(...bulletColor);
-        doc.circle(margin + 6, y + 7, 1.8, "F");
-
-        // Index number
+      // Footer on every page
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
         doc.setFontSize(8);
-        doc.setTextColor(...bulletColor);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${i + 1}.`, margin + 10, y + 8);
-
-        // Content
-        doc.setFontSize(9.5);
-        doc.setTextColor(40, 30, 20);
+        doc.setTextColor(180, 160, 140);
         doc.setFont("helvetica", "normal");
-        doc.text(contentLines, margin + 17, y + 8);
+        doc.text(`EmotiFlow  |  Page ${i} of ${pageCount}`, margin, pageHeight - 8);
+      }
 
-        let refY = y + 8 + contentLines.length * 5.5;
-
-        // Entry ref label
-        if (s.entryRef) {
-          doc.setFontSize(7.5);
-          doc.setTextColor(...labelColor);
-          doc.setFont("helvetica", "bold");
-          doc.text(s.entryRef, margin + 17, refY);
-        }
-
-        // Source badge
-        if (s.source === "ai") {
-          const aiLabel = "AI";
-          doc.setFontSize(6.5);
-          doc.setTextColor(160, 140, 120);
-          doc.setFont("helvetica", "bold");
-          doc.text(aiLabel, pageWidth - margin - 8, y + 8);
-        }
-
-        y += blockH + 3;
-      });
-
-      y += 4;
-    };
-
-    renderSection(
-      "Building New Habits",
-      building,
-      [240, 248, 242],
-      [40, 120, 70],
-      [40, 120, 70]
-    );
-
-    renderSection(
-      "Breaking Old Habits",
-      breaking,
-      [248, 244, 238],
-      [120, 80, 40],
-      [120, 80, 40]
-    );
-
-    // Footer
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(180, 160, 140);
-      doc.setFont("helvetica", "normal");
-      doc.text(`EmotiFlow  |  Page ${i} of ${pageCount}`, margin, pageHeight - 8);
+      doc.save(`emotiflow-coping-strategies-${format(new Date(), "yyyyMMdd")}.pdf`);
+      toast.success("PDF exported");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error("PDF export failed", { description: msg });
     }
-
-    doc.save(`emotiflow-coping-strategies-${format(new Date(), "yyyyMMdd")}.pdf`);
-    toast.success("PDF exported");
   };
 
   return (
