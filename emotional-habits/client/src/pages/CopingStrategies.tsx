@@ -123,9 +123,9 @@ function CopingStrategiesContent() {
               : 5.5;
 
             const hasRef = !!s.entryRef;
-            // top pad(8) + text lines + gap(2) + ref(hasRef?6:0) + bottom pad(5)
+            // top pad(8) + ref label(hasRef?5:0) + text lines + bottom pad(5)
             const textH = contentLines.length * lineH;
-            const blockH = 8 + textH + (hasRef ? 8 : 0) + 5;
+            const blockH = 8 + (hasRef ? 5 : 0) + textH + 5;
 
             if (y + blockH > pageHeight - 16) { doc.addPage(); y = 16; }
 
@@ -143,27 +143,29 @@ function CopingStrategiesContent() {
             doc.setFont("helvetica", "bold");
             doc.text(`${i + 1}.`, margin + 10, y + 8);
 
-            // Content text (font already set to 9.5pt normal above)
-            doc.setTextColor(40, 30, 20);
-            doc.setFont("helvetica", "normal");
-            doc.text(contentLines, margin + 17, y + 8);
-
-            // Entry ref — placed below last line of content
+            // Entry ref label — above content
+            let contentStartY = y + 8;
             if (hasRef && s.entryRef) {
-              const refY = y + 8 + textH + 2;
               doc.setFontSize(7.5);
               doc.setTextColor(section.color[0], section.color[1], section.color[2]);
               doc.setFont("helvetica", "bold");
-              doc.text(s.entryRef, margin + 17, refY);
+              doc.text(s.entryRef, margin + 17, contentStartY);
+              contentStartY += 5;
             }
 
-            // AI badge
+            // AI badge — top right, same line as label/content start
             if (s.source === "ai") {
               doc.setFontSize(6.5);
               doc.setTextColor(160, 140, 120);
               doc.setFont("helvetica", "bold");
               doc.text("AI", pageWidth - margin - 8, y + 8);
             }
+
+            // Content text
+            doc.setFontSize(9.5);
+            doc.setTextColor(40, 30, 20);
+            doc.setFont("helvetica", "normal");
+            doc.text(contentLines, margin + 17, contentStartY);
 
             y += blockH + 3;
           }
