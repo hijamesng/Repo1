@@ -111,21 +111,19 @@ function CopingStrategiesContent() {
         } else {
           for (let i = 0; i < section.items.length; i++) {
             const s = section.items[i];
+            const hasRef = !!(s.entryRef && s.entryRef.trim());
 
-            // Set content font BEFORE splitTextToSize so wrapping uses correct metrics
+            // Measure content with correct font before calculating layout
             doc.setFontSize(9.5);
             doc.setFont("helvetica", "normal");
             const contentLines = doc.splitTextToSize(s.content ?? "", contentWidth - 18);
+            const LINE_H = 5; // mm per line at 9.5pt
+            const REF_H = 6;  // mm for ref label row
+            const PAD_TOP = 8;
+            const PAD_BOT = 5;
 
-            // Get actual line height from jsPDF in document units (mm)
-            const lineH: number = typeof (doc as any).getLineHeight === "function"
-              ? (doc as any).getLineHeight()
-              : 5.5;
-
-            const hasRef = !!s.entryRef;
-            // top pad(8) + ref label(hasRef?5:0) + text lines + bottom pad(5)
-            const textH = contentLines.length * lineH;
-            const blockH = 8 + (hasRef ? 5 : 0) + textH + 5;
+            const textH = contentLines.length * LINE_H;
+            const blockH = PAD_TOP + (hasRef ? REF_H : 0) + textH + PAD_BOT;
 
             if (y + blockH > pageHeight - 16) { doc.addPage(); y = 16; }
 
@@ -133,39 +131,42 @@ function CopingStrategiesContent() {
             doc.setFillColor(section.bg[0], section.bg[1], section.bg[2]);
             doc.roundedRect(margin, y, contentWidth, blockH, 2, 2, "F");
 
-            // Bullet circle
+            // Bullet circle + number (anchored to top-pad)
             doc.setFillColor(section.color[0], section.color[1], section.color[2]);
-            doc.circle(margin + 6, y + 7, 1.8, "F");
-
-            // Number
+            doc.circle(margin + 6, y + PAD_TOP - 1, 1.8, "F");
             doc.setFontSize(8);
             doc.setTextColor(section.color[0], section.color[1], section.color[2]);
             doc.setFont("helvetica", "bold");
-            doc.text(`${i + 1}.`, margin + 10, y + 8);
+            doc.text(`${i + 1}.`, margin + 10, y + PAD_TOP);
 
-            // Entry ref label — above content
-            let contentStartY = y + 8;
-            if (hasRef && s.entryRef) {
+            // Entry ref label row
+            let innerY = y + PAD_TOP;
+            if (hasRef) {
               doc.setFontSize(7.5);
               doc.setTextColor(section.color[0], section.color[1], section.color[2]);
               doc.setFont("helvetica", "bold");
-              doc.text(s.entryRef, margin + 17, contentStartY);
-              contentStartY += 5;
-            }
-
-            // AI badge — top right, same line as label/content start
-            if (s.source === "ai") {
+              doc.text(s.entryRef!, margin + 17, innerY);
+              // AI badge on same line, right-aligned
+              if (s.source === "ai") {
+                doc.setFontSize(6.5);
+                doc.setTextColor(160, 140, 120);
+                doc.setFont("helvetica", "bold");
+                doc.text("AI", pageWidth - margin - 8, innerY);
+              }
+              innerY += REF_H;
+            } else if (s.source === "ai") {
+              // No ref but is AI — show badge on content line
               doc.setFontSize(6.5);
               doc.setTextColor(160, 140, 120);
               doc.setFont("helvetica", "bold");
-              doc.text("AI", pageWidth - margin - 8, y + 8);
+              doc.text("AI", pageWidth - margin - 8, innerY);
             }
 
             // Content text
             doc.setFontSize(9.5);
             doc.setTextColor(40, 30, 20);
             doc.setFont("helvetica", "normal");
-            doc.text(contentLines, margin + 17, contentStartY);
+            doc.text(contentLines, margin + 17, innerY);
 
             y += blockH + 3;
           }
